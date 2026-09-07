@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Variaveis */
+
+@theme {
+  /* Fontes */
+  --font-primary: "Poppins", sans-serif;
+
+  --color-primary: #4413e3;
+  --color-secondary: #6a7282;
+
+  --color-light: #f5f9fd;
+  --color-dark: #02081a;
+}
