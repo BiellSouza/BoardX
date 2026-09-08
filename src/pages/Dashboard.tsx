@@ -181,7 +181,7 @@ function Dashboard() {
     <div className="bg-dark h-screen font-primary">
       <div className="lg:flex justify-between overflow-y-hidden">
         <div className="flex justify-between p-4 lg:hidden">
-          <Menu className=" text-light" />
+          <Menu className="text-light" />
           <img
             src={fotoUser}
             alt="foto ilustrativa de usuário"
@@ -189,7 +189,7 @@ function Dashboard() {
           />
         </div>
 
-        <div className="bg-dark w-82 h-screen p-4 hidden lg:flex lg:flex-col">
+        <div className="bg-dark w-82 h-screen p-4 hidden justify-between lg:flex lg:flex-col">
           <img
             src={logoLight}
             alt="logo versãi=o clara do BoardX"
@@ -257,7 +257,7 @@ function Dashboard() {
         </div>
 
         <div className="bg-[#F3F6FD] h-screen rounded-tr-2xl rounded-tl-2xl p-4 lg:rounded-tl-none lg:rounded-tr-none w-full">
-          <div className="flex justify-between items-center mb-10 pb-4 border-b border-gray-300 bg-white">
+          <div className="hidden lg:flex justify-between items-center mb-10 pb-4 border-b border-gray-300 bg-white">
             <div className="w-82 rounded-full px-4 py-2 flex items-center gap-3 text-sm bg-primary/5">
               <Search className="text-secondary size-5" />
               <input
@@ -302,7 +302,7 @@ function Dashboard() {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="hidden lg:flex gap-2">
                 {buttonsInteractives.map((button) => (
                   <button
                     key={button.id}
@@ -326,7 +326,7 @@ function Dashboard() {
               <button
                 key={table.id}
                 onClick={() => setSelectButton(table.id)}
-                className={`shrink-0 px-4 py-3 cursor-pointer rounded-lg border text-[12px] transition flex items-center gap-2 w-full flex-1 justify-center lg:px-2 ${
+                className={`shrink-0 px-4 py-3 cursor-pointer rounded-lg border flex text-[12px] transition items-center gap-2 min-w-32 sm:min-w-42 lg:min-w-32 flex-1 justify-center lg:px-2 ${
                   selectButton === table.id
                     ? "bg-primary/10 border-primary text-primary"
                     : "bg-primary/5 border-gray-300 text-black"
