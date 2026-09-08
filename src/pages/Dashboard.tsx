@@ -9,7 +9,6 @@ import {
   ChartNoAxesColumn,
   ChevronDown,
   Filter,
-  FireExtinguisher,
   Flame,
   Grid2X2,
   LogOut,

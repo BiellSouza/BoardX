@@ -5,7 +5,6 @@ import svgGoogle from "../../public/svgs/google.svg";
 import svgGithub from "../../public/svgs/github.svg";
 import {
   ArrowLeft,
-  ChevronRight,
   Eye,
   EyeOff,
   Grid2X2,
