@@ -346,7 +346,7 @@ function Dashboard() {
               </select>
             </button>
           </div>
-          <div className="sm:overflow-y-auto flex flex-col h-screen pb-42 lg:flex-row justify-between lg:gap-4 xl:gap-6">
+          <div className="overflow-y-auto flex flex-col h-screen pb-42 lg:flex-row justify-between lg:gap-4 xl:gap-6">
             {" "}
             <div className="mt-4 border border-gray-300 h-fit rounded-xl rounded-tr-2xl rounded-tl-2xl bg-[#F3F5FD] w-full">
               <div className="flex justify-between bg-primary/10 border-t-2 border-primary p-2 rounded-tr-2xl rounded-tl-2xl">
