@@ -48,6 +48,7 @@ function Dashboard() {
     },
   ];
 
+  // Estado do Modal
   const [modalOpen, setModalOpen] = useState(false);
 
   const [selectButton, setSelectButton] = useState("todo");
@@ -121,10 +122,6 @@ function Dashboard() {
     },
   ];
 
-  function AddCards() {
-    setModalOpen(true);
-  }
-
   const columns = [
     {
       id: 1,
@@ -175,7 +172,7 @@ function Dashboard() {
     },
   ];
 
-  const [tasks, setTasks] = useState(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
   // Guarda o valor do que está sendo arrastado
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
@@ -433,7 +430,7 @@ function Dashboard() {
                     </div>
 
                     <button
-                      onClick={AddCards}
+                      onClick={() => setModalOpen(true)}
                       className="flex items-center gap-2 text-primary justify-center w-fit mx-auto py-4 cursor-pointer"
                     >
                       <Plus className="size-4" />
@@ -446,57 +443,157 @@ function Dashboard() {
           </div>
 
           {modalOpen === true && (
-            <div>
-              <div className="inset-0 bg-black/30 w-full h-screen absolute z-0" />{" "}
-              <div className="fixed inset-0 flex justify-center items-center w-full lg:left-32">
-                <div className="flex flex-col gap-4 bg-white border border-gray-300 w-fit p-4 rounded-2xl max-w-[95%] z-10">
-                  <button onClick={() => setModalOpen(!modalOpen)}>
-                    <X className="text-secondary" />
-                  </button>
-                  <img
-                    src={logo}
-                    alt="logo da BoardX"
-                    className="w-42 object-cover m-auto mb-4"
-                  />
-                  <div className="flex gap-2 items-center justify-between">
-                    {" "}
-                    <label htmlFor="" className="text-sm">
-                      Nome:
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Nome da Tarefa"
-                      className="border-b border-gray-400 outline-none w-full"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 justify-between">
-                    <label htmlFor="" className="text-sm">
-                      Selecione a Prioridade
-                    </label>
-                    <select
-                      name=""
-                      id=""
-                      className="border border-gray-400 rounded-md w-32"
-                    >
-                      <option value="option1">Média</option>
-                      <option value="option1">Alta</option>
-                      <option selected value="option1">
-                        Baixa
-                      </option>
-                    </select>
+            <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+              {/* Overlay */}
+              <div
+                onClick={() => setModalOpen(false)}
+                className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+              />
+
+              {/* Modal */}
+              <div className="relative z-10 w-full max-w-[560px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+                {/* HEADER */}
+                <div className="flex items-start justify-between border-b border-gray-100 px-6 py-5">
+                  <div>
+                    <h2 className="text-[20px] font-semibold text-gray-900">
+                      Nova tarefa
+                    </h2>
+
+                    <p className="mt-1 text-[13px] text-gray-500">
+                      Preencha as informações para criar uma nova tarefa.
+                    </p>
                   </div>
 
-                  <div className="flex items-center gap-2 justify-between">
-                    <label htmlFor="" className="text-sm">
-                      Selecione a data
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* CONTEÚDO */}
+                <div className="space-y-5 px-6 py-6">
+                  {/* NOME */}
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="task-name"
+                      className="text-[13px] font-medium text-gray-700"
+                    >
+                      Nome da tarefa
                     </label>
+
                     <input
-                      type="date"
-                      className="border border-gray-400 p-2 rounded-md text-sm"
+                      id="task-name"
+                      type="text"
+                      placeholder="Ex: Criar tela de login"
+                      className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
                     />
                   </div>
-                  <button className="border border-light bg-primary text-light p-2 w-full rounded-xl cursor-pointer">
-                    Salvar
+
+                  {/* DESCRIÇÃO */}
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="task-description"
+                      className="text-[13px] font-medium text-gray-700"
+                    >
+                      Descrição
+                    </label>
+
+                    <textarea
+                      id="task-description"
+                      rows={3}
+                      placeholder="Descreva o que precisa ser feito..."
+                      className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
+
+                  {/* DATA + PRIORIDADE */}
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {/* DATA */}
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="task-date"
+                        className="text-[13px] font-medium text-gray-700"
+                      >
+                        Prazo
+                      </label>
+
+                      <input
+                        id="task-date"
+                        type="date"
+                        className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+                      />
+                    </div>
+
+                    {/* PRIORIDADE */}
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="task-priority"
+                        className="text-[13px] font-medium text-gray-700"
+                      >
+                        Prioridade
+                      </label>
+
+                      <select
+                        id="task-priority"
+                        defaultValue="medium"
+                        className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+                      >
+                        <option value="low">Baixa</option>
+                        <option value="medium">Média</option>
+                        <option value="high">Alta</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* COLUNA */}
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium text-gray-700">
+                      Adicionar tarefa em
+                    </label>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        className="rounded-xl border border-primary bg-primary/5 px-3 py-3 text-[12px] font-medium text-primary transition"
+                      >
+                        Backlog
+                      </button>
+
+                      <button
+                        type="button"
+                        className="rounded-xl border border-gray-200 px-3 py-3 text-[12px] font-medium text-gray-500 transition hover:border-gray-300 hover:bg-gray-50"
+                      >
+                        Em andamento
+                      </button>
+
+                      <button
+                        type="button"
+                        className="rounded-xl border border-gray-200 px-3 py-3 text-[12px] font-medium text-gray-500 transition hover:border-gray-300 hover:bg-gray-50"
+                      >
+                        Concluído
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* FOOTER */}
+                <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/50 px-6 py-4">
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    className="rounded-xl px-5 py-2.5 text-[13px] font-medium text-gray-600 transition hover:bg-gray-100"
+                  >
+                    Cancelar
+                  </button>
+
+                  <button
+                    type="button"
+                    className="rounded-xl bg-primary px-5 py-2.5 text-[13px] font-medium text-white shadow-sm transition hover:opacity-90 active:scale-[0.98]"
+                  >
+                    Criar tarefa
                   </button>
                 </div>
               </div>
