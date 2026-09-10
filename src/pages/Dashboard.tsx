@@ -21,45 +21,6 @@ import {
 } from "lucide-react";
 
 function Dashboard() {
-  const columns = [
-    {
-      id: 1,
-      title: "Backlog",
-      column: "backlog",
-    },
-    { id: 2, title: "Em Andamento", column: "doing" },
-    { id: 3, title: "Concluído", column: "done" },
-  ];
-
-  const initialTasks = [
-    {
-      label: "Definir estrutura do projeto",
-      date: "12 Set",
-      priority: "Média",
-      color: "#FEEEB7",
-      textColor: "#9F480E",
-      column: "backlog",
-    },
-    {
-      label: "Criar protótipo do layoult",
-      date: "14 Set",
-      priority: "Alta",
-      color: "#FED6E1",
-      textColor: "#FC212A",
-      column: "doing",
-    },
-    {
-      label: "Configurar repositório Git",
-      date: "13 Set",
-      priority: "Baixa",
-      color: "#CCEDE0",
-      textColor: "#296847",
-      column: "done",
-    },
-  ];
-
-  const [tasks, setTasks] = useState(initialTasks);
-
   const tables = [
     {
       id: "todo",
@@ -90,10 +51,6 @@ function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
 
   const [selectButton, setSelectButton] = useState("todo");
-
-  function AddCards() {
-    setModalOpen(true);
-  }
 
   const links = [
     {
@@ -163,6 +120,65 @@ function Dashboard() {
       icon: <Users className="size-4" />,
     },
   ];
+
+  function AddCards() {
+    setModalOpen(true);
+  }
+
+  const columns = [
+    {
+      id: 1,
+      title: "Backlog",
+      column: "backlog",
+    },
+    { id: 2, title: "Em Andamento", column: "doing" },
+    { id: 3, title: "Concluído", column: "done" },
+  ];
+
+  const initialTasks = [
+    {
+      id: 1,
+      label: "Definir estrutura do projeto",
+      date: "12 Set",
+      priority: "Média",
+      color: "#FEEEB7",
+      textColor: "#9F480E",
+      column: "backlog",
+    },
+    {
+      id: 2,
+      label: "Criar protótipo do layoult",
+      date: "14 Set",
+      priority: "Alta",
+      color: "#FED6E1",
+      textColor: "#FC212A",
+      column: "doing",
+    },
+    {
+      id: 3,
+      label: "Configurar repositório Git",
+      date: "13 Set",
+      priority: "Baixa",
+      color: "#CCEDE0",
+      textColor: "#296847",
+      column: "done",
+    },
+  ];
+
+  const [tasks, setTasks] = useState(initialTasks);
+
+  // Guarda o valor do que está sendo arrastado
+  const [draggedTask, setDraggedTask] = useState(null);
+
+  const handleDrop = (column) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === draggedTask.id ? { ...task, column } : task,
+      ),
+    );
+
+    setDraggedTask(null);
+  };
 
   return (
     <div className="bg-dark h-screen font-primary">
@@ -337,13 +353,15 @@ function Dashboard() {
           <div className="overflow-y-auto flex flex-col h-screen pb-42 lg:flex-row justify-between lg:gap-4 xl:gap-6">
             {" "}
             {columns.map((column) => {
-              const columnTasks = initialTasks.filter(
+              const columnTasks = tasks.filter(
                 (task) => task.column === column.column,
               );
 
               return (
                 <div
                   key={column.column}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => handleDrop(column.column)}
                   className="mt-4 border border-gray-300 min-h-100 h-fit rounded-2xl bg-[#F3F5FD] w-full"
                 >
                   {/* Cabeçalho */}
@@ -358,10 +376,11 @@ function Dashboard() {
                   {/* Cards */}
                   <div className="mt-1.5">
                     <div className="flex flex-col gap-2 sm:p-1">
-                      {columnTasks.map((task, index) => (
+                      {columnTasks.map((task) => (
                         <div
                           draggable={true}
-                          key={index}
+                          onDragStart={() => setDraggedTask(task)}
+                          key={task.id}
                           className="flex flex-col gap-2 p-4 border border-gray-300 bg-white rounded-xl cursor-pointer"
                         >
                           <p className="text-[14px] text-black/90">
@@ -412,110 +431,6 @@ function Dashboard() {
                 </div>
               );
             })}
-            {/* <div className="mt-4 border border-gray-300 h-fit rounded-xl rounded-tr-2xl rounded-tl-2xl bg-[#F3F5FD] w-full">
-              <div className="flex justify-between bg-blue-700/10 border-t-2 border-blue-700 p-2 rounded-tr-2xl rounded-tl-2xl">
-                <h1>Em Andamento</h1>
-                <p className="bg-blue-700/20 w-6 h-6 text-center pt-1 rounded-full text-xs">
-                  {cardsEmProgresso.length}
-                </p>
-              </div>
-              <div className="mt-1.5">
-                <div className="flex flex-col gap-2 sm:p-1">
-                  {cardsEmProgresso.map((card, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col gap-2 p-4 border border-gray-300 bg-white rounded-xl cursor-pointer "
-                    >
-                      <p className="text-[14px] text-black/90">{card.label}</p>
-                      <div className=" flex items-center justify-between">
-                        <div className="flex gap-6">
-                          {" "}
-                          <p
-                            className="text-sm w-fit py-1 px-4 rounded-md lg:text-[12px]"
-                            style={{
-                              backgroundColor: card.color,
-                              color: card.textColor,
-                            }}
-                          >
-                            {card.priority}
-                          </p>
-                          <div className="flex gap-3 items-center lg:gap-0">
-                            <Calendar className="size-4 text-secondary" />{" "}
-                            <p className="text-sm text-secondary">
-                              {card.date}
-                            </p>
-                          </div>
-                        </div>{" "}
-                        <img
-                          src={fotoUser}
-                          alt="foto ilustrativa do Usuário"
-                          className="w-6 h-6 object-cover object-top rounded-full"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={() => AddCards()}
-                  className="flex items-center gap-2 text-primary justify-center w-fit mx-auto py-4 cursor-pointer"
-                >
-                  <Plus className="size-4" />
-                  Adicionar tarefa
-                </button>
-              </div>
-            </div>
-            <div className="mt-4 border border-gray-300 h-fit rounded-xl rounded-tr-2xl rounded-tl-2xl bg-[#F3F5FD] w-full">
-              <div className="flex justify-between bg-green-700/10 border-t-2 border-green-700 p-2 rounded-tr-2xl rounded-tl-2xl">
-                <h1>Concluído</h1>
-                <p className="bg-green-700/20 w-6 h-6 text-center pt-1 rounded-full text-xs">
-                  {cardsConcluido.length}
-                </p>
-              </div>
-              <div className="mt-1.5">
-                <div className="flex flex-col gap-2 sm:p-1">
-                  {cardsConcluido.map((card, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col gap-2 p-4 border border-gray-300 bg-white rounded-xl cursor-pointer "
-                    >
-                      <p className="text-[14px] text-black/90">{card.label}</p>
-                      <div className=" flex items-center justify-between">
-                        <div className="flex gap-6">
-                          {" "}
-                          <p
-                            className="text-sm w-fit py-1 px-4 rounded-md lg:text-[12px]"
-                            style={{
-                              backgroundColor: card.color,
-                              color: card.textColor,
-                            }}
-                          >
-                            {card.priority}
-                          </p>
-                          <div className="flex gap-3 items-center lg:gap-0">
-                            <Calendar className="size-4 text-secondary" />{" "}
-                            <p className="text-sm text-secondary">
-                              {card.date}
-                            </p>
-                          </div>
-                        </div>{" "}
-                        <img
-                          src={fotoUser}
-                          alt="foto ilustrativa do Usuário"
-                          className="w-6 h-6 object-cover object-top rounded-full"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={() => AddCards()}
-                  className="flex items-center gap-2 text-primary justify-center w-fit mx-auto py-4 cursor-pointer"
-                >
-                  <Plus className="size-4" />
-                  Adicionar tarefa
-                </button>
-              </div>
-            </div> */}
           </div>
 
           {modalOpen === true && (
