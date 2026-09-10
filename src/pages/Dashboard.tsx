@@ -129,13 +129,23 @@ function Dashboard() {
     {
       id: 1,
       title: "Backlog",
-      column: "backlog",
+      column: "backlog" as const,
     },
-    { id: 2, title: "Em Andamento", column: "doing" },
-    { id: 3, title: "Concluído", column: "done" },
+    { id: 2, title: "Em Andamento", column: "doing" as const },
+    { id: 3, title: "Concluído", column: "done" as const },
   ];
 
-  const initialTasks = [
+  type Task = {
+    id: number;
+    label: string;
+    date: string;
+    priority: string;
+    color: string;
+    textColor: string;
+    column: "backlog" | "doing" | "done";
+  };
+
+  const initialTasks: Task[] = [
     {
       id: 1,
       label: "Definir estrutura do projeto",
@@ -168,9 +178,11 @@ function Dashboard() {
   const [tasks, setTasks] = useState(initialTasks);
 
   // Guarda o valor do que está sendo arrastado
-  const [draggedTask, setDraggedTask] = useState(null);
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
-  const handleDrop = (column) => {
+  const handleDrop = (column: Task["column"]) => {
+    if (!draggedTask) return;
+
     setTasks((prevTasks) =>
       prevTasks.map((task) =>
         task.id === draggedTask.id ? { ...task, column } : task,
