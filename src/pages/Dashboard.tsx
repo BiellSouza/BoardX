@@ -1,7 +1,6 @@
 // import SidebarComponent from "../components/Sidebar";
 import { useState } from "react";
 import fotoUser from "../assets/MinhaFoto.jpeg";
-import logo from "../assets/logoDesktop.png";
 import logoLight from "../assets/logoDesktopLight.png";
 
 import {
