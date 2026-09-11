@@ -142,35 +142,7 @@ function Dashboard() {
     column: "backlog" | "doing" | "done";
   };
 
-  const initialTasks: Task[] = [
-    {
-      id: 1,
-      label: "Definir estrutura do projeto",
-      date: "12 Set",
-      priority: "Média",
-      color: "#FEEEB7",
-      textColor: "#9F480E",
-      column: "backlog",
-    },
-    {
-      id: 2,
-      label: "Criar protótipo do layoult",
-      date: "14 Set",
-      priority: "Alta",
-      color: "#FED6E1",
-      textColor: "#FC212A",
-      column: "doing",
-    },
-    {
-      id: 3,
-      label: "Configurar repositório Git",
-      date: "13 Set",
-      priority: "Baixa",
-      color: "#CCEDE0",
-      textColor: "#296847",
-      column: "done",
-    },
-  ];
+  const initialTasks: Task[] = [];
 
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
@@ -197,7 +169,7 @@ function Dashboard() {
   const [column, setColumn] = useState<"backlog" | "doing" | "done">("backlog");
 
   function Teste() {
-    if (taskName === "" && description === "") {
+    if (taskName === "" || description === "" || priorityTask === "" || dateTask === "") {
       alert("Defina os valores corretamente");
       return;
     }
@@ -468,7 +440,12 @@ function Dashboard() {
                                 <Calendar className="size-4 text-secondary" />
 
                                 <p className="text-sm text-secondary">
-                                  {task.date}
+                                  {new Date(task.date)
+                                    .toLocaleDateString("pt-BR", {
+                                      day: "2-digit",
+                                      month: "short",
+                                    })
+                                    .replace(".", "")}
                                 </p>
                               </div>
                             </div>
