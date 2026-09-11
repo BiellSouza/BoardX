@@ -189,6 +189,60 @@ function Dashboard() {
     setDraggedTask(null);
   };
 
+  // Estados do formulário
+  const [taskName, setTaskName] = useState("");
+  const [description, setDescription] = useState("");
+  const [dateTask, setDateTask] = useState("");
+  const [priorityTask, setPriorityTask] = useState("medium");
+  const [column, setColumn] = useState<"backlog" | "doing" | "done">("backlog");
+
+  function Teste() {
+    if (taskName === "" && description === "") {
+      alert("Defina os valores corretamente");
+      return;
+    }
+    // 1. Definir as cores
+    let color = "";
+    let textColor = "";
+
+    // 2. Verificar a prioridade
+    if (priorityTask === "alta") {
+      color = "#FEE2E2";
+      textColor = "#DC2626";
+    }
+
+    if (priorityTask === "medium") {
+      color = "#DBEAFE";
+      textColor = "#2563EB";
+    }
+
+    if (priorityTask === "baixa") {
+      color = "#DCFCE7";
+      textColor = "#16A34A";
+    }
+
+    // depois vamos criar o newTask aqui
+    const newTask = {
+      id: Date.now(),
+      label: taskName,
+      description: description,
+      date: dateTask,
+      priority: priorityTask,
+      color: color,
+      textColor: textColor,
+      column: column,
+    };
+
+    setTasks((prevTasks) => [...prevTasks, newTask]);
+    setModalOpen(false);
+
+    // Reseta estados
+    setTaskName("");
+    setDescription("");
+    setDateTask("");
+    setPriorityTask("");
+  }
+
   return (
     <div className="bg-dark h-screen font-primary">
       <div className="lg:flex justify-between overflow-y-hidden">
@@ -430,7 +484,10 @@ function Dashboard() {
                     </div>
 
                     <button
-                      onClick={() => setModalOpen(true)}
+                      onClick={() => {
+                        setColumn(column.column);
+                        setModalOpen(true);
+                      }}
                       className="flex items-center gap-2 text-primary justify-center w-fit mx-auto py-4 cursor-pointer"
                     >
                       <Plus className="size-4" />
@@ -485,6 +542,8 @@ function Dashboard() {
                     </label>
 
                     <input
+                      value={taskName}
+                      onChange={(event) => setTaskName(event.target.value)}
                       id="task-name"
                       type="text"
                       placeholder="Ex: Criar tela de login"
@@ -502,6 +561,8 @@ function Dashboard() {
                     </label>
 
                     <textarea
+                      value={description}
+                      onChange={(event) => setDescription(event.target.value)}
                       id="task-description"
                       rows={3}
                       placeholder="Descreva o que precisa ser feito..."
@@ -521,6 +582,8 @@ function Dashboard() {
                       </label>
 
                       <input
+                        value={dateTask}
+                        onChange={(event) => setDateTask(event.target.value)}
                         id="task-date"
                         type="date"
                         className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
@@ -537,13 +600,16 @@ function Dashboard() {
                       </label>
 
                       <select
+                        value={priorityTask}
+                        onChange={(event) =>
+                          setPriorityTask(event.target.value)
+                        }
                         id="task-priority"
-                        defaultValue="medium"
                         className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
                       >
-                        <option value="low">Baixa</option>
+                        <option value="baixa">Baixa</option>
                         <option value="medium">Média</option>
-                        <option value="high">Alta</option>
+                        <option value="alta">Alta</option>
                       </select>
                     </div>
                   </div>
@@ -556,22 +622,37 @@ function Dashboard() {
 
                     <div className="grid grid-cols-3 gap-2">
                       <button
+                        onClick={() => setColumn("backlog")}
                         type="button"
-                        className="rounded-xl border border-primary bg-primary/5 px-3 py-3 text-[12px] font-medium text-primary transition"
+                        className={`rounded-xl border px-3 py-3 text-[12px] font-medium transition ${
+                          column === "backlog"
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50"
+                        }`}
                       >
                         Backlog
                       </button>
 
                       <button
+                        onClick={() => setColumn("doing")}
                         type="button"
-                        className="rounded-xl border border-gray-200 px-3 py-3 text-[12px] font-medium text-gray-500 transition hover:border-gray-300 hover:bg-gray-50"
+                        className={`rounded-xl border px-3 py-3 text-[12px] font-medium transition ${
+                          column === "doing"
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50"
+                        }`}
                       >
                         Em andamento
                       </button>
 
                       <button
                         type="button"
-                        className="rounded-xl border border-gray-200 px-3 py-3 text-[12px] font-medium text-gray-500 transition hover:border-gray-300 hover:bg-gray-50"
+                        onClick={() => setColumn("done")}
+                        className={`rounded-xl border px-3 py-3 text-[12px] font-medium transition ${
+                          column === "done"
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50"
+                        }`}
                       >
                         Concluído
                       </button>
@@ -591,6 +672,7 @@ function Dashboard() {
 
                   <button
                     type="button"
+                    onClick={Teste}
                     className="rounded-xl bg-primary px-5 py-2.5 text-[13px] font-medium text-white shadow-sm transition hover:opacity-90 active:scale-[0.98]"
                   >
                     Criar tarefa
