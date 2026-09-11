@@ -20,33 +20,6 @@ import {
 } from "lucide-react";
 
 function Dashboard() {
-  const tables = [
-    {
-      id: "todo",
-      label: "Todas",
-      numb: 4,
-      icon: <Filter className="size-4" />,
-    },
-    {
-      id: "alta",
-      label: "Em Alta",
-      numb: 3,
-      icon: <Flame className="size-4" />,
-    },
-    {
-      id: "urgency",
-      label: "Com Prazo",
-      numb: 3,
-      icon: <Calendar className="size-4" />,
-    },
-    {
-      id: "myCards",
-      label: "Meus Cards",
-      numb: 2,
-      icon: <Calendar className="size-4" />,
-    },
-  ];
-
   // Estado do Modal
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -168,7 +141,12 @@ function Dashboard() {
   const [column, setColumn] = useState<"backlog" | "doing" | "done">("backlog");
 
   function Teste() {
-    if (taskName === "" || description === "" || priorityTask === "" || dateTask === "") {
+    if (
+      taskName === "" ||
+      description === "" ||
+      priorityTask === "" ||
+      dateTask === ""
+    ) {
       alert("Defina os valores corretamente");
       return;
     }
@@ -213,6 +191,33 @@ function Dashboard() {
     setDateTask("");
     setPriorityTask("");
   }
+
+  const tables = [
+    {
+      id: "todo",
+      label: "Todas",
+      numb: tasks.length,
+      icon: <Filter className="size-4" />,
+    },
+    {
+      id: "alta",
+      label: "Em Alta",
+      numb: 3,
+      icon: <Flame className="size-4" />,
+    },
+    {
+      id: "urgency",
+      label: "Com Prazo",
+      numb: 3,
+      icon: <Calendar className="size-4" />,
+    },
+    {
+      id: "myCards",
+      label: "Meus Cards",
+      numb: 2,
+      icon: <Calendar className="size-4" />,
+    },
+  ];
 
   return (
     <div className="bg-dark h-screen font-primary">
