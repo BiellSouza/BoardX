@@ -1,12 +1,10 @@
 // import SidebarComponent from "../components/Sidebar";
-import { useState } from "react";
-import fotoUser from "../assets/MinhaFoto.jpeg";
-import logoLight from "../assets/logoDesktopLight.png";
-
 import {
   Calendar,
   ChartNoAxesColumn,
   ChevronDown,
+  CircleAlert,
+  CircleCheck,
   Filter,
   Flame,
   Grid2X2,
@@ -18,9 +16,12 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { supabase } from "../lib/supabase";
+import { useState, useEffect } from "react";
+import fotoUser from "../assets/MinhaFoto.jpeg";
+import logoLight from "../assets/logoDesktopLight.png";
 
 function Dashboard() {
-  // Estado do Modal
   const [modalOpen, setModalOpen] = useState(false);
 
   const [selectButton, setSelectButton] = useState("todo");
@@ -118,6 +119,86 @@ function Dashboard() {
 
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
+  const [ordenarPor, setOrdenarPor] = useState("prazo");
+
+  // Exibe as tarefas
+  useEffect(() => {
+    async function buscarTarefas() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        console.log("Usuário não autenticado");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.log("ERRO AO BUSCAR TAREFAS:", error);
+        return;
+      }
+
+      console.log("TAREFAS DO USUÁRIO:", data);
+
+      const tarefasFormatadas = data.map((task) => {
+        let color = "";
+        let textColor = "";
+
+        if (task.priority === "alta") {
+          color = "#FEE2E2";
+          textColor = "#DC2626";
+        }
+
+        if (task.priority === "media") {
+          color = "#DBEAFE";
+          textColor = "#2563EB";
+        }
+
+        if (task.priority === "baixa") {
+          color = "#DCFCE7";
+          textColor = "#16A34A";
+        }
+
+        return {
+          id: task.id,
+          label: task.title,
+          date: task.due_date,
+          priority: task.priority,
+          color,
+          textColor,
+          column: task.status,
+        };
+      });
+
+      setTasks(tarefasFormatadas);
+    }
+
+    buscarTarefas();
+  }, []);
+
+  const tarefasOrdenadas = [...tasks].sort((a, b) => {
+    if (ordenarPor === "prazo") {
+      return a.date.localeCompare(b.date);
+    }
+
+    if (ordenarPor === "prioridade") {
+      const prioridades: Record<string, number> = {
+        alta: 1,
+        medium: 2,
+        baixa: 3,
+      };
+
+      return prioridades[a.priority] - prioridades[b.priority];
+    }
+
+    return 0;
+  });
+
   // Guarda o valor do que está sendo arrastado
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
@@ -137,10 +218,10 @@ function Dashboard() {
   const [taskName, setTaskName] = useState("");
   const [description, setDescription] = useState("");
   const [dateTask, setDateTask] = useState("");
-  const [priorityTask, setPriorityTask] = useState("medium");
+  const [priorityTask, setPriorityTask] = useState("media");
   const [column, setColumn] = useState<"backlog" | "doing" | "done">("backlog");
 
-  function Teste() {
+  async function Teste() {
     if (
       taskName === "" ||
       description === "" ||
@@ -160,7 +241,7 @@ function Dashboard() {
       textColor = "#DC2626";
     }
 
-    if (priorityTask === "medium") {
+    if (priorityTask === "media") {
       color = "#DBEAFE";
       textColor = "#2563EB";
     }
@@ -170,26 +251,57 @@ function Dashboard() {
       textColor = "#16A34A";
     }
 
-    // depois vamos criar o newTask aqui
-    const newTask = {
-      id: Date.now(),
-      label: taskName,
-      description: description,
-      date: dateTask,
-      priority: priorityTask,
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert("Uusuário não autenticado.");
+      return;
+    }
+
+    console.log("USUÁRIO:", user);
+    console.log("ID DO USUÁRIO:", user?.id);
+
+    // insere na tabela
+    const { data, error } = await supabase
+      .from("tasks")
+      .insert({
+        user_id: user.id,
+        title: taskName,
+        description: description,
+        due_date: dateTask,
+        priority: priorityTask,
+        status: column,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.log("ERROR AO SALVAR TAREFA:", error);
+      alert("Erro ao salvar a tarefa.");
+      return;
+    }
+
+    const newTask: Task = {
+      id: data.id,
+      label: data.title,
+      date: data.due_date,
+      priority: data.priority,
       color: color,
       textColor: textColor,
-      column: column,
+      column: data.status,
     };
 
     setTasks((prevTasks) => [...prevTasks, newTask]);
+    alert("Tarefa criada!");
+
     setModalOpen(false);
 
-    // Reseta estados
     setTaskName("");
     setDescription("");
     setDateTask("");
-    setPriorityTask("");
+    setPriorityTask("media");
   }
 
   const tables = [
@@ -201,21 +313,21 @@ function Dashboard() {
     },
     {
       id: "alta",
-      label: "Em Alta",
-      numb: 3,
+      label: "Alta",
+      numb: tasks.filter((task) => task.priority === "alta").length,
       icon: <Flame className="size-4" />,
     },
     {
       id: "urgency",
-      label: "Com Prazo",
+      label: "Média",
       numb: 3,
-      icon: <Calendar className="size-4" />,
+      icon: <CircleAlert className="size-4" />,
     },
     {
       id: "myCards",
-      label: "Meus Cards",
+      label: "Baixa",
       numb: 2,
-      icon: <Calendar className="size-4" />,
+      icon: <CircleCheck className="size-4" />,
     },
   ];
 
@@ -383,7 +495,11 @@ function Dashboard() {
             ))}
             <button className="flex text-[12px] cursor-pointer items-center w-fit bg-white border border-gray-300 px-3 rounded-xl">
               <p className="truncate"> Ordenar por: </p>{" "}
-              <select name="" id="" className="outline-none w-14 text-primary">
+              <select
+                value={ordenarPor}
+                onChange={(event) => setOrdenarPor(event.target.value)}
+                className="outline-none w-14 text-primary"
+              >
                 <option value="prazo">Prazo</option>
                 <option value="prioridade">Prioridade</option>
               </select>
@@ -392,7 +508,7 @@ function Dashboard() {
           <div className="overflow-y-auto flex flex-col h-screen pb-42 lg:flex-row justify-between lg:gap-4 xl:gap-6">
             {" "}
             {columns.map((column) => {
-              const columnTasks = tasks.filter(
+              const columnTasks = tarefasOrdenadas.filter(
                 (task) => task.column === column.column,
               );
 
@@ -430,7 +546,7 @@ function Dashboard() {
                             <div className="flex gap-6">
                               {task.priority && (
                                 <p
-                                  className="text-sm w-fit py-1 px-4 rounded-md lg:text-[12px]"
+                                  className="text-sm w-fit py-1 px-2 rounded-md lg:text-[12px] xl:px-3"
                                   style={{
                                     backgroundColor: task.color,
                                     color: task.textColor,
@@ -441,9 +557,9 @@ function Dashboard() {
                               )}
 
                               <div className="flex gap-3 items-center lg:gap-1">
-                                <Calendar className="size-4 text-secondary" />
+                                <Calendar className="size-3 text-secondary" />
 
-                                <p className="text-sm text-secondary">
+                                <p className="text-[12px] lg:text-[10px] text-secondary xl:text-sm">
                                   {new Date(task.date)
                                     .toLocaleDateString("pt-BR", {
                                       day: "2-digit",
@@ -589,7 +705,7 @@ function Dashboard() {
                         className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
                       >
                         <option value="baixa">Baixa</option>
-                        <option value="medium">Média</option>
+                        <option value="media">Média</option>
                         <option value="alta">Alta</option>
                       </select>
                     </div>
@@ -605,7 +721,7 @@ function Dashboard() {
                       <button
                         onClick={() => setColumn("backlog")}
                         type="button"
-                        className={`rounded-xl border px-3 py-3 text-[12px] font-medium transition ${
+                        className={`rounded-xl border px-3 py-3 text-[10px] sm:text-sm font-medium transition ${
                           column === "backlog"
                             ? "border-primary bg-primary/5 text-primary"
                             : "border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50"
@@ -617,7 +733,7 @@ function Dashboard() {
                       <button
                         onClick={() => setColumn("doing")}
                         type="button"
-                        className={`rounded-xl border px-3 py-3 text-[12px] font-medium transition ${
+                        className={`rounded-xl border px-3 py-3 text-[10px] sm:text-sm font-medium transition ${
                           column === "doing"
                             ? "border-primary bg-primary/5 text-primary"
                             : "border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50"
@@ -629,7 +745,7 @@ function Dashboard() {
                       <button
                         type="button"
                         onClick={() => setColumn("done")}
-                        className={`rounded-xl border px-3 py-3 text-[12px] font-medium transition ${
+                        className={`rounded-xl border px-3 py-3 text-[10px] sm:text-sm font-medium transition ${
                           column === "done"
                             ? "border-primary bg-primary/5 text-primary"
                             : "border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50"
