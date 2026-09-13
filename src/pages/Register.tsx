@@ -15,9 +15,16 @@ import {
   Users,
 } from "lucide-react";
 import { useState } from "react";
+import { supabase } from "../lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 function Register() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [privacy, setPrivacy] = useState(false);
   const topics = [
     {
       icon: <Grid2X2 className="size-5" />,
@@ -32,6 +39,50 @@ function Register() {
       label: "Seus dado sempre salvos",
     },
   ];
+
+  const navigate = useNavigate();
+
+  async function handleRegister() {
+    if (password !== confirmPassword) {
+      alert("As duas senhas devem ser iguais!");
+      setPassword("");
+      setConfirmPassword("");
+      return;
+    }
+
+    if (privacy === false) {
+      alert("Aceite os Termos de Uso e Política de Privacidade");
+      return;
+    }
+
+    console.log("NAME:", name);
+    console.log("EMAIL:", email);
+    console.log("PASSWORD:", password);
+    console.log("CONFIRM PASSWORD:", confirmPassword);
+
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: {
+          name: name,
+          confirmPassword: confirmPassword,
+        },
+      },
+    });
+
+    console.log("DATA:", data);
+    console.log("ERROR:", error);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    alert("Parabéns, sua conta foi criada!");
+    navigate("/dashboard");
+  }
+
   return (
     <div className="font-primary flex flex-col h-screen justify-center lg:flex-row lg:justify-between">
       <div className="w-sm h-screen bg-dark p-6 justify-between hidden lg:flex lg:flex-col">
@@ -59,7 +110,7 @@ function Register() {
 
         <div className="flex flex-col gap-4 mt-6">
           {topics.map((item, index) => (
-            <div key={index} className="flex items-center gap-2">
+            <div key={index} className="flex items-center gap-2 w-full">
               <div className="text-light p-1 rounded-md bg-primary">
                 {item.icon}
               </div>
@@ -94,12 +145,14 @@ function Register() {
             <label htmlFor="" className="text-xs text-secondary">
               Nome completo
             </label>
-            <div className="flex items-center gap-2 border border-gray-300 px-2 h-9 rounded-md">
+            <div className="flex items-center gap-2 w-full border border-gray-300 px-2 h-9 rounded-md">
               <User className="size-4 text-secondary" />
               <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
                 type="text"
                 placeholder="Seu nome"
-                className=" outline-none text-sm text-secondary"
+                className="w-full outline-none text-sm text-secondary"
               />
             </div>
           </div>
@@ -108,12 +161,14 @@ function Register() {
             <label htmlFor="" className="text-xs text-secondary">
               E-mail
             </label>
-            <div className="flex items-center gap-2 border border-gray-300 px-2 h-9 rounded-md">
+            <div className="flex items-center gap-2 w-full border border-gray-300 px-2 h-9 rounded-md">
               <Mail className="size-4 text-secondary" />
               <input
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 type="email"
                 placeholder="seu@email.com"
-                className=" outline-none text-sm text-secondary"
+                className="w-full outline-none text-sm text-secondary"
               />
             </div>
           </div>
@@ -123,13 +178,15 @@ function Register() {
               Senha
             </label>
             <div className="flex items-center justify-between gap-2 border border-gray-300 px-2 h-9 rounded-md">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full">
                 {" "}
                 <User className="size-4 text-secondary" />
                 <input
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   type={mostrarSenha ? "text" : "password"}
                   placeholder="Mínimo de 6 caracteres"
-                  className=" outline-none text-sm text-secondary"
+                  className="w-full outline-none text-sm text-secondary"
                 />
               </div>
               <button onClick={() => setMostrarSenha(!mostrarSenha)}>
@@ -147,13 +204,15 @@ function Register() {
               Confirmar senha{" "}
             </label>
             <div className="flex items-center justify-between gap-2 border border-gray-300 px-2 h-9 rounded-md">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full">
                 {" "}
                 <User className="size-4 text-secondary" />
                 <input
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
                   type={mostrarSenha ? "text" : "password"}
                   placeholder="Confirmar sua senha"
-                  className=" outline-none text-sm text-secondary"
+                  className="w-full outline-none text-sm text-secondary"
                 />
               </div>
               <button onClick={() => setMostrarSenha(!mostrarSenha)}>
@@ -168,8 +227,12 @@ function Register() {
         </div>
 
         <div className="flex items-center justify-between my-4 max-w-100 mx-auto sm:max-w-100 sm:mx-auto lg:min-w-full lg:my-6">
-          <div className="flex items-center gap-2">
-            <input type="checkbox" className="accent-primary" />
+          <div className="flex items-center gap-2 w-full">
+            <input
+              type="checkbox"
+              className="accent-primary"
+              onChange={(event) => setPrivacy(event.target.checked)}
+            />
             <p className="text-xs text-secondary">
               Eu concordo com os{" "}
               <a className="text-xs text-primary" href="">
@@ -180,7 +243,10 @@ function Register() {
           </div>
         </div>
 
-        <button className="cursor-pointer max-w-100 mx-auto flex justify-center w-full bg-primary text-light rounded-md h-8 items-center text-xs sm:max-w-100 sm:mx-auto">
+        <button
+          onClick={handleRegister}
+          className="scale-100 hover:scale-95 duration-300 transition-all cursor-pointer max-w-100 mx-auto flex justify-center w-full bg-primary text-light rounded-md h-8 items-center text-xs sm:max-w-100 sm:mx-auto"
+        >
           Criar conta
         </button>
 
@@ -194,10 +260,26 @@ function Register() {
 
         <div className="flex flex-row gap-2 mt-6 items-center justify-center lg:flex-col lg:mt-0">
           <div className="flex gap-2">
-            <button className="cursor-pointer flex items-center gap-2 border border-gray-300 py-2 w-24 justify-center rounded-md text-xs text-secondary sm:max-w-100 sm:py-3 lg:w-24">
+            <button
+              disabled
+              className="cursor-not-allowed opacity-50 flex items-center gap-2 lg:w-24 border border-gray-300 py-2 w-24 justify-center rounded-md text-xs text-secondary sm:max-w-100 sm:py-3 scale-100 hover:scale-95 duration-300 transition-all"
+            >
               <img className="w-4" src={svgGoogle} alt="Logo do Google" />
             </button>
-            <button className="cursor-pointer flex items-center gap-2 border border-gray-300 py-2 w-24 justify-center rounded-md text-xs text-secondary sm:max-w-100 sm:py-3 lg:w-24">
+            <button
+              onClick={async () => {
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                  provider: "github",
+                  options: {
+                    redirectTo: "http://localhost:5173/dashboard",
+                  },
+                });
+
+                console.log("DATA:", data);
+                console.log("ERROR:", error);
+              }}
+              className="cursor-pointer flex items-center gap-2 lg:w-24 border border-gray-300 py-2 w-24 justify-center rounded-md text-xs text-secondary sm:max-w-100 sm:py-3"
+            >
               {" "}
               <img className="w-4" src={svgGithub} alt="Logo do Google" />
             </button>
