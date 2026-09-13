@@ -15,7 +15,7 @@ import logoMobile from "../assets/logoMobilepng.png";
 import svgGoogle from "../../public/svgs/google.svg";
 import svgGithub from "../../public/svgs/github.svg";
 import logoDesktop from "../assets/logoDesktopLight.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -38,32 +38,56 @@ function Login() {
   const navigate = useNavigate();
 
   async function handelLogin() {
+    // 1. Faz o login no Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    // 2. Verifica se o login deu erro
     if (error) {
-      alert(error.message);
+      console.log("ERRO LOGIN:", error);
+
+      alert("Email ou senha incorretos.");
+
       return;
     }
-    // console.log("ID DO USUÁRIO:", data.user.id);
 
-    // Buscar user
+    console.log("USUÁRIO AUTH:", data.user);
+
+    // 3. Procura o perfil desse usuário na tabela users
     const { data: userProfile, error: profileError } = await supabase
       .from("users")
-      .select("")
+      .select("*")
       .eq("id", data.user.id)
-      .single();
+      .maybeSingle();
 
+    console.log("PERFIL:", userProfile);
+    console.log("ERRO DO PERFIL:", profileError);
+
+    // 4. Verifica erro ao buscar perfil
     if (profileError) {
+      console.log("ERRO AO CARREGAR PERFIL:", profileError);
+
       alert(
         "Não foi possível carregar seu perfil, entre em contato com o suporte.",
       );
+
+      return;
     }
 
-    console.log("PERFIL:", userProfile);
+    // 5. Verifica se não encontrou o perfil
+    if (!userProfile) {
+      console.log(
+        "Usuário autenticado, mas não existe perfil na tabela users.",
+      );
 
+      alert("Perfil não encontrado.");
+
+      return;
+    }
+
+    // 6. Login concluído
     navigate("/dashboard");
   }
 
@@ -231,9 +255,9 @@ function Login() {
 
         <p className="text-secondary text-xs mt-6 text-center sm:mt-10 lg:mt-6">
           Ainda não tem uma conta?{" "}
-          <a className="text-primary" href="/register">
+          <Link to="/register" className="text-primary">
             Criar conta
-          </a>
+          </Link>
         </p>
       </div>
     </div>
