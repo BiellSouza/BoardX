@@ -16,7 +16,7 @@ function App() {
       if (data.session) {
         navigate("dashboard");
       } else {
-        navigate("/login");
+        navigate("/");
       }
     };
     verificarSession();

@@ -1,12 +1,10 @@
 // import SidebarComponent from "../components/Sidebar";
-import { useState } from "react";
-import fotoUser from "../assets/MinhaFoto.jpeg";
-import logoLight from "../assets/logoDesktopLight.png";
-
 import {
   Calendar,
   ChartNoAxesColumn,
   ChevronDown,
+  CircleAlert,
+  CircleCheck,
   Filter,
   Flame,
   Grid2X2,
@@ -18,12 +16,17 @@ import {
   Users,
   X,
 } from "lucide-react";
+import React from "react";
+import { supabase } from "../lib/supabase";
+import { useState, useEffect } from "react";
+import logoLight from "../assets/logoDesktopLight.png";
+import ColumnComponent from "../components/ColumnComponent";
+import CardsComponent from "../components/CardsComponent";
 
 function Dashboard() {
-  // Estado do Modal
   const [modalOpen, setModalOpen] = useState(false);
 
-  const [selectButton, setSelectButton] = useState("todo");
+  // const [selectButton, setSelectButton] = useState("todo");
 
   const links = [
     {
@@ -53,7 +56,7 @@ function Dashboard() {
     },
   ];
 
-  const [linkActive, setLinkActive] = useState("");
+  // const [linkActive, setLinkActive] = useState("");
 
   const boards = [
     {
@@ -77,7 +80,7 @@ function Dashboard() {
       label: "Estudos",
     },
   ];
-  const [boardActive, setBoardActive] = useState("");
+  // const [boardActive, setBoardActive] = useState("");
 
   const [buttonInteractiveactive, setButtonInteractiveActive] = useState("");
 
@@ -94,29 +97,197 @@ function Dashboard() {
     },
   ];
 
-  const columns = [
-    {
-      id: 1,
-      title: "Backlog",
-      column: "backlog" as const,
-    },
-    { id: 2, title: "Em Andamento", column: "doing" as const },
-    { id: 3, title: "Concluído", column: "done" as const },
-  ];
+  type Column = {
+    id: string;
+    title: string;
+    user_id: string;
+    created_at: string;
+  };
+
+  const [columns, setColumns] = useState<Column[]>([]);
+
+  async function buscarColunas() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      console.log("Usuário não autenticado");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("columns")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.log("❌ ERRO AO BUSCAR COLUNAS:", error);
+      return;
+    }
+
+    console.log("📋 COLUNAS DO USUÁRIO:", data);
+
+    setColumns(data);
+  }
+
+  useEffect(() => {
+    buscarColunas();
+  }, []);
+
+  async function createColumn() {
+    const title = window.prompt("Digite o nome da nova coluna:");
+
+    if (!title || title.trim() === "") {
+      return;
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert("Usuário não autenticado.");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("columns")
+      .insert({
+        user_id: user.id,
+        title: title.trim(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.log("ERRO AO CRIAR COLUNA:", error);
+      alert("Erro ao criar coluna.");
+      return;
+    }
+
+    setColumns((prevColumns) => [...prevColumns, data]);
+
+    alert("Coluna criada!");
+  }
 
   type Task = {
     id: number;
     label: string;
+    description: string;
     date: string;
-    priority: string;
+    priority: "baixa" | "media" | "alta";
     color: string;
     textColor: string;
-    column: "backlog" | "doing" | "done";
+    column: string;
   };
 
   const initialTasks: Task[] = [];
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+
+  const [ordenarPor, setOrdenarPor] = useState("prazo");
+
+  // Exibe as tarefas
+  useEffect(() => {
+    async function buscarTarefas() {
+      console.log("🔵 INICIANDO BUSCA DAS TAREFAS...");
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      console.log("👤 USUÁRIO:", user);
+      console.log("❌ ERRO DO USUÁRIO:", userError);
+
+      if (userError) {
+        console.log("ERRO AO PEGAR USUÁRIO:", userError);
+        alert("Não foi possível carregar o usuário.");
+        return;
+      }
+
+      if (!user) {
+        console.log("Nenhum usuário autenticado.");
+        alert("Usuário não autenticado.");
+        return;
+      }
+
+      console.log("🆔 ID DO USUÁRIO LOGADO:", user.id);
+      console.log("📧 EMAIL:", user.email);
+
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", user.id);
+
+      console.log("📦 TAREFAS RETORNADAS:", data);
+      console.log("❌ ERRO AO BUSCAR TAREFAS:", error);
+
+      if (error) {
+        alert("Não foi possível carregar as tarefas.");
+        return;
+      }
+
+      const tarefasFormatadas: Task[] = data.map((task) => {
+        let color = "";
+        let textColor = "";
+
+        if (task.priority === "alta") {
+          color = "#FEE2E2";
+          textColor = "#DC2626";
+        }
+
+        if (task.priority === "media") {
+          color = "#DBEAFE";
+          textColor = "#2563EB";
+        }
+
+        if (task.priority === "baixa") {
+          color = "#DCFCE7";
+          textColor = "#16A34A";
+        }
+
+        return {
+          id: task.id,
+          label: task.title,
+          description: task.description,
+          date: task.due_date,
+          priority: task.priority,
+          color,
+          textColor,
+          column: task.column_id,
+        };
+      });
+
+      console.log("✅ TAREFAS FORMATADAS:", tarefasFormatadas);
+
+      setTasks(tarefasFormatadas);
+      console.log("📌 COLUNAS:", columns);
+      console.log("📌 TAREFAS:", tarefasFormatadas);
+    }
+
+    buscarTarefas();
+  }, []);
+  const tarefasOrdenadas = [...tasks].sort((a, b) => {
+    if (ordenarPor === "prazo") {
+      return a.date.localeCompare(b.date);
+    }
+
+    if (ordenarPor === "prioridade") {
+      const prioridades: Record<string, number> = {
+        alta: 1,
+        media: 2,
+        baixa: 3,
+      };
+
+      return prioridades[a.priority] - prioridades[b.priority];
+    }
+
+    return 0;
+  });
 
   // Guarda o valor do que está sendo arrastado
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
@@ -137,14 +308,18 @@ function Dashboard() {
   const [taskName, setTaskName] = useState("");
   const [description, setDescription] = useState("");
   const [dateTask, setDateTask] = useState("");
-  const [priorityTask, setPriorityTask] = useState("medium");
-  const [column, setColumn] = useState<"backlog" | "doing" | "done">("backlog");
+  const [priorityTask, setPriorityTask] = useState<"baixa" | "media" | "alta">(
+    "media",
+  );
+  const [column, setColumn] = useState("");
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
-  function Teste() {
+  async function SaveTask() {
     if (
       taskName === "" ||
       description === "" ||
-      priorityTask === "" ||
+      // priorityTask === "" ||
       dateTask === ""
     ) {
       alert("Defina os valores corretamente");
@@ -160,7 +335,7 @@ function Dashboard() {
       textColor = "#DC2626";
     }
 
-    if (priorityTask === "medium") {
+    if (priorityTask === "media") {
       color = "#DBEAFE";
       textColor = "#2563EB";
     }
@@ -170,26 +345,175 @@ function Dashboard() {
       textColor = "#16A34A";
     }
 
-    // depois vamos criar o newTask aqui
-    const newTask = {
-      id: Date.now(),
-      label: taskName,
-      description: description,
-      date: dateTask,
-      priority: priorityTask,
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert("Uusuário não autenticado.");
+      return;
+    }
+
+    console.log("USUÁRIO:", user);
+    console.log("ID DO USUÁRIO:", user?.id);
+
+    // insere na tabela
+    const { data, error } = await supabase
+      .from("tasks")
+      .insert({
+        user_id: user.id,
+        title: taskName,
+        description: description,
+        due_date: dateTask,
+        priority: priorityTask,
+        column_id: column,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.log("ERROR AO SALVAR TAREFA:", error);
+      alert("Erro ao salvar a tarefa.");
+      return;
+    }
+
+    const newTask: Task = {
+      id: data.id,
+      label: data.title,
+      description: data.description,
+      date: data.due_date,
+      priority: data.priority,
       color: color,
       textColor: textColor,
-      column: column,
+      column: data.column_id,
     };
 
     setTasks((prevTasks) => [...prevTasks, newTask]);
+    alert("Tarefa criada!");
+
     setModalOpen(false);
 
-    // Reseta estados
     setTaskName("");
     setDescription("");
     setDateTask("");
-    setPriorityTask("");
+    setPriorityTask("media");
+  }
+
+  function openEditTask(task: Task) {
+    console.log("TASK RECEBIDA:", task);
+    console.log("ID DA TAREFA:", task.id);
+
+    setEditingTask(task);
+
+    setTaskName(task.label);
+    setDescription(task.description);
+    setDateTask(task.date);
+    setPriorityTask(task.priority);
+    setColumn(task.column);
+
+    setModalOpen(true);
+  }
+
+  async function updateTask() {
+    console.log("EDITANDO:", editingTask);
+
+    if (!editingTask) {
+      console.log("Nenhuma tarefa selecionada para edição");
+      return;
+    }
+
+    console.log("ID DA TAREFA:", editingTask.id);
+
+    const { data, error } = await supabase
+      .from("tasks")
+      .update({
+        title: taskName,
+        description: description,
+        due_date: dateTask,
+        priority: priorityTask,
+        status: column,
+      })
+      .eq("id", editingTask.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.log("ERRO AO ATUALIZAR:", error);
+      alert("Erro ao atualizar a tarefa.");
+      return;
+    }
+
+    console.log("TAREFA ATUALIZADA:", data);
+
+    // Atualiza a tarefa na tela
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === editingTask.id
+          ? {
+              ...task,
+              label: data.title,
+              description: data.description,
+              date: data.due_date,
+              priority: data.priority,
+              column: data.status,
+
+              color:
+                data.priority === "alta"
+                  ? "#FEE2E2"
+                  : data.priority === "media"
+                    ? "#DBEAFE"
+                    : "#DCFCE7",
+
+              textColor:
+                data.priority === "alta"
+                  ? "#DC2626"
+                  : data.priority === "media"
+                    ? "#2563EB"
+                    : "#16A34A",
+            }
+          : task,
+      ),
+    );
+
+    // Limpa o estado de edição
+    setEditingTask(null);
+
+    // Fecha o modal
+    setModalOpen(false);
+
+    // Limpa formulário
+    setTaskName("");
+    setDescription("");
+    setDateTask("");
+    setPriorityTask("media");
+    setColumn("backlog");
+
+    alert("Tarefa atualizada!");
+  }
+
+  async function deleteTask(taskId: number) {
+    const confirmar = window.confirm(
+      "Tem certeza que deseja excluir esta tarefa?",
+    );
+
+    if (!confirmar) return;
+
+    const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+
+    if (error) {
+      console.log("ERRO AO EXCLUIR:", error);
+      alert("Erro ao excluir a tarefa.");
+      return;
+    }
+
+    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+
+    alert("Tarefa excluída!");
+  }
+
+  function openTaskDetails(task: Task) {
+    setSelectedTask(task);
+    setDetailsModalOpen(true);
   }
 
   const tables = [
@@ -201,49 +525,93 @@ function Dashboard() {
     },
     {
       id: "alta",
-      label: "Em Alta",
-      numb: 3,
+      label: "Alta",
+      numb: tasks.filter((task) => task.priority === "alta").length,
       icon: <Flame className="size-4" />,
     },
     {
       id: "urgency",
-      label: "Com Prazo",
-      numb: 3,
-      icon: <Calendar className="size-4" />,
+      label: "Média",
+      numb: tasks.filter((task) => task.priority === "media").length,
+      icon: <CircleAlert className="size-4" />,
     },
     {
       id: "myCards",
-      label: "Meus Cards",
-      numb: 2,
-      icon: <Calendar className="size-4" />,
+      label: "Baixa",
+      numb: tasks.filter((task) => task.priority === "baixa").length,
+      icon: <CircleCheck className="size-4" />,
     },
   ];
 
+  //deslogando usuário
+  async function handleLogout() {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.log("ERRO AO SAIR:", error);
+      alert("Erro ao sair da conta.");
+      return;
+    }
+
+    console.log("Usuário deslogado!");
+
+    // manda para a tela de login
+    window.location.href = "/";
+  }
+
+  const [userProfile, setUserProfile] = useState<{
+    name: string;
+    email: string;
+  } | null>(null);
+
+  useEffect(() => {
+    async function getProfile() {
+      const { data: authData } = await supabase.auth.getUser();
+
+      if (!authData.user) return;
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("name, email")
+        .eq("id", authData.user.id)
+        .single();
+
+      if (error) {
+        console.log("ERRO AO BUSCAR PERFIL:", error);
+        return;
+      }
+
+      setUserProfile(data);
+    }
+
+    getProfile();
+  }, []);
+
   return (
     <div className="bg-dark h-screen font-primary">
-      <div className="lg:flex justify-between overflow-y-hidden">
+      <div className="lg:flex h-screen overflow-hidden">
+        {" "}
         <div className="flex justify-between p-4 lg:hidden">
           <Menu className="text-light" />
           <img
-            src={fotoUser}
+            src="https://i.pinimg.com/736x/4a/5f/3a/4a5f3aef362f672be1f4fef05a118323.jpg"
             alt="foto ilustrativa de usuário"
             className="w-8 h-8 object-cover object-top rounded-full border-2 border-light"
           />
         </div>
-
-        <div className="bg-dark w-82 h-screen p-4 hidden justify-between lg:flex lg:flex-col">
+        <div className="bg-black w-82 h-screen py-4 px-3 hidden justify-between lg:flex lg:flex-col overflow-y-auto">
           <img
             src={logoLight}
-            alt="logo versãi=o clara do BoardX"
+            alt="logo versão clara do BoardX"
             className="max-w-52"
           />
 
           <div className="flex flex-col gap-4 mt-6">
-            {links.map((link) => (
+            {links.map((link, index) => (
               <div key={link.id}>
                 <button
-                  onClick={() => setLinkActive(link.id)}
-                  className={`text-light flex items-center gap-3 py-3 w-full rounded-xl px-4 ${linkActive === link.id ? "bg-primary" : "bg-transparent"}`}
+                  // onClick={() => setLinkActive(link.id)}
+                  className={`text-light flex items-center gap-3 py-3 w-full rounded-xl px-4  ${index === 0 ? "text-white cursor-pointer" : "text-white opacity-50 cursor-not-allowed"}`}
                 >
                   <span>{link.icon}</span> <p>{link.label}</p>
                 </button>
@@ -251,9 +619,9 @@ function Dashboard() {
             ))}
           </div>
 
-          <div className="flex items-center justify-between mt-12">
+          <div className="flex items-center justify-between mt-12 opacity-30">
             <h1 className="text-light text-[14px]">Meus Boards</h1>
-            <button className="flex items-center gap-2 text-light bg-primary p-2 rounded-md text-[12px]">
+            <button className="flex items-center gap-2 text-light bg-primary p-2 rounded-md text-[12px] cursor-not-allowed">
               <span>
                 <Plus className="size-4" />
               </span>
@@ -265,8 +633,8 @@ function Dashboard() {
             {boards.map((board) => (
               <button
                 key={board.id}
-                onClick={() => setBoardActive(board.id)}
-                className={`text-light flex gap-3 items-center p-3 rounded-xl ${boardActive === board.id ? "bg-primary" : "bg-transparent"}`}
+                // onClick={() => setBoardActive(board.id)}
+                className={`text-light flex gap-3 items-center p-3 rounded-xl opacity-40 cursor-not-allowed`}
               >
                 <div
                   className="w-6 h-6 rounded-full"
@@ -281,25 +649,33 @@ function Dashboard() {
             {" "}
             <div className="flex items-center gap-2">
               <img
-                src={fotoUser}
+                src="https://i.pinimg.com/736x/4a/5f/3a/4a5f3aef362f672be1f4fef05a118323.jpg"
                 alt="imagem ilustrativa do usuário"
                 className="w-14 h-14 rounded-full object-cover object-top border-2 border-light"
               />
 
               <div>
-                <h1 className="text-light truncate">Gabriel Souza</h1>
+                <h1 className="text-light truncate">
+                  {userProfile?.name || "Usuário"}
+                </h1>
                 <p className="text-light text-[12px]">Desenvolvedor</p>
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <Settings className="text-light" />
-              <LogOut className="text-light" />
+              <Settings className="text-light cursor-not-allowed opacity-30" />
+              <button
+                onClick={handleLogout}
+                className="scale-100 hover:scale-90 transition-all duration-300 cursor-pointer"
+              >
+                {" "}
+                <LogOut className="text-light hover:text-red-700  duration-300 transition-colors" />
+              </button>
             </div>
           </div>
         </div>
-
-        <div className="bg-[#F3F6FD] h-screen rounded-tr-2xl rounded-tl-2xl p-4 lg:rounded-tl-none lg:rounded-tr-none w-full">
-          <div className="hidden lg:flex justify-between items-center mb-10 pb-4 border-b border-gray-300 bg-white">
+        <div className="bg-[#F3F6FD] h-screen min-w-0 flex-1 rounded-tr-2xl rounded-tl-2xl p-4 lg:rounded-tl-none lg:rounded-tr-none overflow-hidden">
+          {" "}
+          <div className="hidden lg:flex justify-between items-center mb-10 p-4 border-b border-gray-300 bg-white">
             <div className="w-82 rounded-full px-4 py-2 flex items-center gap-3 text-sm bg-primary/5">
               <Search className="text-secondary size-5" />
               <input
@@ -312,13 +688,15 @@ function Dashboard() {
               {" "}
               <div className="flex items-center gap-2">
                 <img
-                  src={fotoUser}
+                  src="https://i.pinimg.com/736x/4a/5f/3a/4a5f3aef362f672be1f4fef05a118323.jpg"
                   alt="imagem ilustrativa do usuário"
                   className="w-10 h-10 rounded-full object-cover object-top border-2 border-light"
                 />
 
                 <div>
-                  <h1 className="text-black truncate">Gabriel Souza</h1>
+                  <h1 className="text-black truncate">
+                    {userProfile?.name || "Usuário"}
+                  </h1>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full" />
                     <p className="text-secondary text-[12px]">Online</p>
@@ -349,137 +727,84 @@ function Dashboard() {
                   <button
                     key={button.id}
                     onClick={() => setButtonInteractiveActive(button.id)}
-                    className={`flex cursor-pointer items-center gap-2 text-sm p-3 rounded-xl w-full flex-1 ${buttonInteractiveactive === button.id ? "text-primary bg-primary/10" : ""}`}
+                    disabled
+                    className={`flex cursor-not-allowed opacity-35 items-center gap-2 text-sm p-3 rounded-xl w-full flex-1 ${buttonInteractiveactive === button.id ? "text-primary bg-primary/10" : ""}`}
                   >
                     {button.icon} <p>{button.label}</p>
                   </button>
                 ))}
 
                 <div>
-                  <button className="flex cursor-pointer items-center gap-2 bg-primary text-white p-3 rounded-xl text-sm">
-                    <Plus className="size-4" /> Nova Tarefa
+                  <button
+                    onClick={createColumn}
+                    className="flex cursor-pointer items-center gap-2 bg-white sahdow-lg border border-gray-300 text-primary p-3 rounded-sm text-sm"
+                  >
+                    <Plus className="size-4" /> Coluna
                   </button>
                 </div>
               </div>
             </div>
           </div>
-          <div className="flex mt-4 gap-2.5 text-center overflow-x-auto">
-            {tables.map((table) => (
-              <button
-                key={table.id}
-                onClick={() => setSelectButton(table.id)}
-                className={`shrink-0 px-4 py-3 cursor-pointer rounded-lg border flex text-[12px] transition items-center gap-2 min-w-32 sm:min-w-42 lg:min-w-32 flex-1 justify-center lg:px-2 ${
-                  selectButton === table.id
-                    ? "bg-primary/10 border-primary text-primary"
-                    : "bg-primary/5 border-gray-300 text-black"
-                }`}
-              >
-                <span className="hidden sm:flex">{table.icon}</span>
-                <p>
-                  {" "}
-                  {table.label} ({table.numb})
-                </p>
-              </button>
+          <div className="flex mt-4 w-full text-center overflow-x-auto border-b pb-4 border-gray-300">
+            {tables.map((table, index) => (
+              <React.Fragment key={table.id}>
+                <button className="shrink-0 flex text-[12px] min-w-20 flex-1 items-center justify-center gap-2 lg:px-2">
+                  <span className="hidden sm:flex">{table.icon}</span>
+
+                  <p className="truncate">
+                    {table.label} ({table.numb})
+                  </p>
+                </button>
+
+                {index < tables.length - 1 && (
+                  <div className="h-5 w-px bg-gray-300 self-center shrink-0" />
+                )}
+              </React.Fragment>
             ))}
-            <button className="flex text-[12px] cursor-pointer items-center w-fit bg-white border border-gray-300 px-3 rounded-xl">
-              <p className="truncate"> Ordenar por: </p>{" "}
-              <select name="" id="" className="outline-none w-14 text-primary">
+
+            <button className="shrink-0 flex text-[12px] cursor-pointer items-center bg-white border border-gray-300 px-3 rounded-sm ml-2">
+              <p className="truncate">Ordenar por:</p>
+
+              <select
+                value={ordenarPor}
+                onChange={(event) => setOrdenarPor(event.target.value)}
+                className="outline-none w-14 text-primary"
+              >
                 <option value="prazo">Prazo</option>
                 <option value="prioridade">Prioridade</option>
               </select>
             </button>
           </div>
-          <div className="overflow-y-auto flex flex-col h-screen pb-42 lg:flex-row justify-between lg:gap-4 xl:gap-6">
+          <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-220px)] overflow-x-auto overflow-y-auto pb-42 min-w-0">
             {" "}
             {columns.map((column) => {
-              const columnTasks = tasks.filter(
-                (task) => task.column === column.column,
+              const columnTasks = tarefasOrdenadas.filter(
+                (task) => task.column === column.id,
               );
 
               return (
-                <div
-                  key={column.column}
+                <ColumnComponent
+                  key={column.id}
+                  title={column.title}
+                  numberTasks={columnTasks.length}
                   onDragOver={(event) => event.preventDefault()}
-                  onDrop={() => handleDrop(column.column)}
-                  className="mt-4 border border-gray-300 min-h-100 h-fit rounded-2xl bg-[#F3F5FD] w-full"
+                  onDrop={() => handleDrop(column.id)}
                 >
-                  {/* Cabeçalho */}
-                  <div className="flex justify-between bg-primary/10 border-t-2 border-primary p-2 rounded-tr-2xl rounded-tl-2xl">
-                    <h1>{column.title}</h1>
-
-                    <p className="bg-primary/20 w-6 h-6 text-center pt-1 rounded-full text-xs">
-                      {columnTasks.length}
-                    </p>
-                  </div>
-
-                  {/* Cards */}
-                  <div className="mt-1.5">
-                    <div className="flex flex-col gap-2 sm:p-1">
-                      {columnTasks.map((task) => (
-                        <div
-                          draggable={true}
-                          onDragStart={() => setDraggedTask(task)}
-                          key={task.id}
-                          className="flex flex-col gap-2 p-4 border border-gray-300 bg-white rounded-xl cursor-pointer"
-                        >
-                          <p className="text-[14px] text-black/90">
-                            {task.label}
-                          </p>
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex gap-6">
-                              {task.priority && (
-                                <p
-                                  className="text-sm w-fit py-1 px-4 rounded-md lg:text-[12px]"
-                                  style={{
-                                    backgroundColor: task.color,
-                                    color: task.textColor,
-                                  }}
-                                >
-                                  {task.priority}
-                                </p>
-                              )}
-
-                              <div className="flex gap-3 items-center lg:gap-1">
-                                <Calendar className="size-4 text-secondary" />
-
-                                <p className="text-sm text-secondary">
-                                  {new Date(task.date)
-                                    .toLocaleDateString("pt-BR", {
-                                      day: "2-digit",
-                                      month: "short",
-                                    })
-                                    .replace(".", "")}
-                                </p>
-                              </div>
-                            </div>
-
-                            <img
-                              src={fotoUser}
-                              alt="foto ilustrativa do Usuário"
-                              className="w-6 h-6 object-cover object-top rounded-full"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setColumn(column.column);
-                        setModalOpen(true);
-                      }}
-                      className="flex items-center gap-2 text-primary justify-center w-fit mx-auto py-4 cursor-pointer"
-                    >
-                      <Plus className="size-4" />
-                      Adicionar tarefa
-                    </button>
-                  </div>
-                </div>
+                  <CardsComponent
+                    tasks={columnTasks}
+                    onDragStart={(task) => setDraggedTask(task)}
+                    onTaskClick={(task) => openTaskDetails(task)}
+                    onEdit={(task) => openEditTask(task)}
+                    onDelete={(taskId) => deleteTask(taskId)}
+                    onAddTask={() => {
+                      setColumn(column.id);
+                      setModalOpen(true);
+                    }}
+                  />
+                </ColumnComponent>
               );
             })}
           </div>
-
           {modalOpen === true && (
             <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
               {/* Overlay */}
@@ -489,7 +814,7 @@ function Dashboard() {
               />
 
               {/* Modal */}
-              <div className="relative z-10 w-full max-w-[560px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+              <div className="relative z-10 w-full max-w-140 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
                 {/* HEADER */}
                 <div className="flex items-start justify-between border-b border-gray-100 px-6 py-5">
                   <div>
@@ -583,13 +908,15 @@ function Dashboard() {
                       <select
                         value={priorityTask}
                         onChange={(event) =>
-                          setPriorityTask(event.target.value)
+                          setPriorityTask(
+                            event.target.value as "baixa" | "media" | "alta",
+                          )
                         }
                         id="task-priority"
                         className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
                       >
                         <option value="baixa">Baixa</option>
-                        <option value="medium">Média</option>
+                        <option value="media">Média</option>
                         <option value="alta">Alta</option>
                       </select>
                     </div>
@@ -601,42 +928,21 @@ function Dashboard() {
                       Adicionar tarefa em
                     </label>
 
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        onClick={() => setColumn("backlog")}
-                        type="button"
-                        className={`rounded-xl border px-3 py-3 text-[12px] font-medium transition ${
-                          column === "backlog"
-                            ? "border-primary bg-primary/5 text-primary"
-                            : "border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50"
-                        }`}
-                      >
-                        Backlog
-                      </button>
-
-                      <button
-                        onClick={() => setColumn("doing")}
-                        type="button"
-                        className={`rounded-xl border px-3 py-3 text-[12px] font-medium transition ${
-                          column === "doing"
-                            ? "border-primary bg-primary/5 text-primary"
-                            : "border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50"
-                        }`}
-                      >
-                        Em andamento
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setColumn("done")}
-                        className={`rounded-xl border px-3 py-3 text-[12px] font-medium transition ${
-                          column === "done"
-                            ? "border-primary bg-primary/5 text-primary"
-                            : "border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50"
-                        }`}
-                      >
-                        Concluído
-                      </button>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {columns.map((col) => (
+                        <button
+                          key={col.id}
+                          type="button"
+                          onClick={() => setColumn(col.id)}
+                          className={`rounded-xl border px-3 py-3 text-[10px] sm:text-sm font-medium transition ${
+                            column === col.id
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50"
+                          }`}
+                        >
+                          {col.title}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -653,11 +959,100 @@ function Dashboard() {
 
                   <button
                     type="button"
-                    onClick={Teste}
+                    onClick={editingTask ? updateTask : SaveTask}
                     className="rounded-xl bg-primary px-5 py-2.5 text-[13px] font-medium text-white shadow-sm transition hover:opacity-90 active:scale-[0.98]"
                   >
-                    Criar tarefa
+                    {editingTask ? "Salvar alterações" : "Criar tarefa"}
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {detailsModalOpen && selectedTask && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+              onClick={() => setDetailsModalOpen(false)}
+            >
+              <div
+                className="w-full max-w-lg rounded-sm bg-white p-6 shadow-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Cabeçalho */}
+                <div className="flex items-start justify-between gap-4 border-b border-gray-300">
+                  <div>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Detalhes da tarefa
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setDetailsModalOpen(false)}
+                    className="flex h-8 w-8 items-center justify-center rounded-sm text-gray-500 hover:bg-gray-100"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="mt-6 flex items-center gap-2 ">
+                  <h3 className="text-sm font-semibold text-gray-700">
+                    Título:
+                  </h3>
+
+                  <div className="rounded-xl bg-gray-50 text-sm text-gray-600">
+                    {selectedTask.label || "Nenhuma descrição adicionada."}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-col items-start gap-2 border border-gray-300 p-2">
+                  <h3 className="mb-2 text-sm font-semibold text-gray-700">
+                    Descrição:
+                  </h3>
+
+                  <div className="rounded-xl bg-gray-50 text-sm text-gray-600 overflow-y-auto max-h-32">
+                    {selectedTask.description ||
+                      "Nenhuma descrição adicionada."}
+                  </div>
+                </div>
+
+                <div className="mt-5 grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-medium text-gray-700">
+                      Data de entrega
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-gray-400">
+                      {selectedTask.date || "Sem data"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-medium text-gray-700">
+                      Prioridade
+                    </p>
+
+                    <span
+                      className="mt-1 inline-block rounded-full px-3 py-1 text-xs font-semibold"
+                      style={{
+                        backgroundColor: selectedTask.color,
+                        color: selectedTask.textColor,
+                      }}
+                    >
+                      {selectedTask.priority}
+                    </span>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-medium text-gray-700">Status</p>
+
+                    <p className="mt-1 text-sm font-medium text-gray-400">
+                      {selectedTask.column === "backlog"
+                        ? "A Fazer"
+                        : selectedTask.column === "doing"
+                          ? "Em Andamento"
+                          : "Concluído"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

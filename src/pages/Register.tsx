@@ -55,10 +55,10 @@ function Register() {
       return;
     }
 
-    console.log("NAME:", name);
-    console.log("EMAIL:", email);
-    console.log("PASSWORD:", password);
-    console.log("CONFIRM PASSWORD:", confirmPassword);
+    // console.log("NAME:", name);
+    // console.log("EMAIL:", email);
+    // console.log("PASSWORD:", password);
+    // console.log("CONFIRM PASSWORD:", confirmPassword);
 
     const { data, error } = await supabase.auth.signUp({
       email: email,
@@ -104,7 +104,7 @@ function Register() {
           <img
             src={imgLogin}
             alt="imagem ilustrativa de plataforma"
-            className="w-full mt-6 max-w-[380px]"
+            className="w-full mt-6 max-w-95"
           />
         </div>
 
