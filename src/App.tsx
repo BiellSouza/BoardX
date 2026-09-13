@@ -9,18 +9,18 @@ import { Routes, Route } from "react-router-dom";
 function App() {
   const navigate = useNavigate();
   // verifica se o usuário está logado
-  // useEffect(() => {
-  //   const verificarSession = async () => {
-  //     const { data } = await supabase.auth.getSession();
+  useEffect(() => {
+    const verificarSession = async () => {
+      const { data } = await supabase.auth.getSession();
 
-  //     if (data.session) {
-  //       navigate("dashboard");
-  //     } else {
-  //       navigate("/login");
-  //     }
-  //   };
-  //   verificarSession();
-  // }, []);
+      if (data.session) {
+        navigate("dashboard");
+      } else {
+        navigate("/login");
+      }
+    };
+    verificarSession();
+  }, []);
 
   return (
     <Routes>

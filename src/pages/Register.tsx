@@ -11,13 +11,12 @@ import {
   Lock,
   Mail,
   Shield,
-  Target,
   User,
   Users,
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function Register() {
   const [name, setName] = useState("");
