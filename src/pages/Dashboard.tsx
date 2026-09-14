@@ -722,13 +722,13 @@ function Dashboard() {
                   </p>
                 </div>
               </div>
-              <div className="hidden lg:flex gap-2">
+              <div className="flex gap-2">
                 {buttonsInteractives.map((button) => (
                   <button
                     key={button.id}
                     onClick={() => setButtonInteractiveActive(button.id)}
                     disabled
-                    className={`flex cursor-not-allowed opacity-35 items-center gap-2 text-sm p-3 rounded-xl w-full flex-1 ${buttonInteractiveactive === button.id ? "text-primary bg-primary/10" : ""}`}
+                    className={` hidden cursor-not-allowed opacity-35 items-center gap-2 text-sm p-3 rounded-xl w-full flex-1 ${buttonInteractiveactive === button.id ? "text-primary bg-primary/10" : ""}`}
                   >
                     {button.icon} <p>{button.label}</p>
                   </button>
